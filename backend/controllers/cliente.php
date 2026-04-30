@@ -1,40 +1,40 @@
 <?php
-// filepath: backend/controllers/producto.php
+// filepath: backend/controllers/cliente.php
 
-function handleProducto($method, $id = null) {
+function handleCliente($method, $id = null) {
     $conn = getConnection();
     $id = filter_var($id, FILTER_VALIDATE_INT);
 
     switch ($method) {
         case 'GET':
             if ($id) {
-                // Obtener un producto por ID
-                $stmt = $conn->prepare("SELECT * FROM productos WHERE id = ?");
+                // Obtener un cliente por ID
+                $stmt = $conn->prepare("SELECT * FROM clientes WHERE id = ?");
                 $stmt->bind_param("i", $id);
                 $stmt->execute();
                 $result = $stmt->get_result();
-                $producto = $result->fetch_assoc();
+                $cliente = $result->fetch_assoc();
                 $stmt->close();
 
-                if ($producto) {
-                    echo json_encode($producto);
+                if ($cliente) {
+                    echo json_encode($cliente);
                 } else {
                     http_response_code(404);
-                    echo json_encode(['error' => 'Producto no encontrado']);
+                    echo json_encode(['error' => 'Cliente no encontrado']);
                 }
             } else {
-                // Obtener todos los productos
-                $result = $conn->query("SELECT * FROM productos ORDER BY id DESC");
-                $productos = [];
+                // Obtener todos los clientes
+                $result = $conn->query("SELECT * FROM clientes ORDER BY id DESC");
+                $clientes = [];
                 while ($row = $result->fetch_assoc()) {
-                    $productos[] = $row;
+                    $clientes[] = $row;
                 }
-                echo json_encode($productos);
+                echo json_encode($clientes);
             }
             break;
 
         case 'POST':
-            // Crear nuevo producto
+            // Crear nuevo cliente
             $data = json_decode(file_get_contents("php://input"), true);
 
             if (!is_array($data)) {
@@ -49,37 +49,38 @@ function handleProducto($method, $id = null) {
                 break;
             }
 
-            $stmt = $conn->prepare("INSERT INTO productos (nombre, descripcion, precio, stock, categoria) VALUES (?, ?, ?, ?, ?)");
+            $stmt = $conn->prepare("INSERT INTO clientes (nombre, apellido, email, telefono, direccion) VALUES (?, ?, ?, ?, ?)");
             $nombre = trim($data['nombre']);
-            $descripcion = $data['descripcion'] ?? '';
-            $precio = (float) ($data['precio'] ?? 0);
-            $stock = (int) ($data['stock'] ?? $data['cantidad'] ?? 0);
-            $categoria = $data['categoria'] ?? '';
+            $apellido = $data['apellido'] ?? '';
+            $email = trim($data['email'] ?? '');
+            $email = $email === '' ? null : $email;
+            $telefono = $data['telefono'] ?? '';
+            $direccion = $data['direccion'] ?? '';
 
-            $stmt->bind_param("ssdis", $nombre, $descripcion, $precio, $stock, $categoria);
+            $stmt->bind_param("sssss", $nombre, $apellido, $email, $telefono, $direccion);
 
             if ($stmt->execute()) {
                 http_response_code(201);
                 echo json_encode([
                     'id' => $conn->insert_id,
                     'nombre' => $nombre,
-                    'descripcion' => $descripcion,
-                    'precio' => $precio,
-                    'stock' => $stock,
-                    'categoria' => $categoria
+                    'apellido' => $apellido,
+                    'email' => $email,
+                    'telefono' => $telefono,
+                    'direccion' => $direccion
                 ]);
             } else {
                 http_response_code(500);
-                echo json_encode(['error' => 'Error al crear producto']);
+                echo json_encode(['error' => 'Error al crear cliente']);
             }
             $stmt->close();
             break;
 
         case 'PUT':
-            // Actualizar producto
+            // Actualizar cliente
             if (!$id) {
                 http_response_code(400);
-                echo json_encode(['error' => 'ID de producto requerido']);
+                echo json_encode(['error' => 'ID de cliente requerido']);
                 break;
             }
 
@@ -100,24 +101,25 @@ function handleProducto($method, $id = null) {
                 $params[] = trim($data['nombre']);
                 $types .= "s";
             }
-            if (isset($data['descripcion'])) {
-                $fields[] = "descripcion = ?";
-                $params[] = $data['descripcion'];
+            if (isset($data['apellido'])) {
+                $fields[] = "apellido = ?";
+                $params[] = $data['apellido'];
                 $types .= "s";
             }
-            if (isset($data['precio'])) {
-                $fields[] = "precio = ?";
-                $params[] = (float) $data['precio'];
-                $types .= "d";
+            if (isset($data['email'])) {
+                $fields[] = "email = ?";
+                $email = trim($data['email']);
+                $params[] = $email === '' ? null : $email;
+                $types .= "s";
             }
-            if (isset($data['stock']) || isset($data['cantidad'])) {
-                $fields[] = "stock = ?";
-                $params[] = (int) ($data['stock'] ?? $data['cantidad']);
-                $types .= "i";
+            if (isset($data['telefono'])) {
+                $fields[] = "telefono = ?";
+                $params[] = $data['telefono'];
+                $types .= "s";
             }
-            if (isset($data['categoria'])) {
-                $fields[] = "categoria = ?";
-                $params[] = $data['categoria'];
+            if (isset($data['direccion'])) {
+                $fields[] = "direccion = ?";
+                $params[] = $data['direccion'];
                 $types .= "s";
             }
 
@@ -130,40 +132,40 @@ function handleProducto($method, $id = null) {
             $params[] = $id;
             $types .= "i";
 
-            $sql = "UPDATE productos SET " . implode(", ", $fields) . " WHERE id = ?";
+            $sql = "UPDATE clientes SET " . implode(", ", $fields) . " WHERE id = ?";
             $stmt = $conn->prepare($sql);
             bindParams($stmt, $types, $params);
 
             if ($stmt->execute()) {
-                echo json_encode(['message' => 'Producto actualizado']);
+                echo json_encode(['message' => 'Cliente actualizado']);
             } else {
                 http_response_code(500);
-                echo json_encode(['error' => 'Error al actualizar producto']);
+                echo json_encode(['error' => 'Error al actualizar cliente']);
             }
             $stmt->close();
             break;
 
         case 'DELETE':
-            // Eliminar producto
+            // Eliminar cliente
             if (!$id) {
                 http_response_code(400);
-                echo json_encode(['error' => 'ID de producto requerido']);
+                echo json_encode(['error' => 'ID de cliente requerido']);
                 break;
             }
 
-            $stmt = $conn->prepare("DELETE FROM productos WHERE id = ?");
+            $stmt = $conn->prepare("DELETE FROM clientes WHERE id = ?");
             $stmt->bind_param("i", $id);
 
             if ($stmt->execute()) {
                 if ($stmt->affected_rows === 0) {
                     http_response_code(404);
-                    echo json_encode(['error' => 'Producto no encontrado']);
+                    echo json_encode(['error' => 'Cliente no encontrado']);
                 } else {
-                    echo json_encode(['message' => 'Producto eliminado']);
+                    echo json_encode(['message' => 'Cliente eliminado']);
                 }
             } else {
                 http_response_code(500);
-                echo json_encode(['error' => 'Error al eliminar producto']);
+                echo json_encode(['error' => 'Error al eliminar cliente']);
             }
             $stmt->close();
             break;

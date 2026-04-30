@@ -21,7 +21,8 @@
 
         <!-- Panel Productos -->
         <div id="productos" class="panel active">
-            <form onsubmit="add('productos', event)">
+            <form id="form-productos" onsubmit="save('productos', event)">
+                <input type="hidden" name="id">
                 <div class="form-group">
                     <input name="nombre" placeholder="Nombre" required>
                 </div>
@@ -35,7 +36,9 @@
                     <input name="stock" placeholder="Stock" type="number" min="0" required>
                 </div>
                 <button type="submit" class="btn-submit">Agregar Producto</button>
+                <button type="button" class="btn-cancel" onclick="cancelEdit('productos')" hidden>Cancelar edición</button>
             </form>
+            <p id="mensaje-productos" class="message" role="status"></p>
             <table>
                 <thead>
                     <tr>
@@ -52,7 +55,8 @@
 
         <!-- Panel Clientes -->
         <div id="clientes" class="panel">
-            <form onsubmit="add('clientes', event)">
+            <form id="form-clientes" onsubmit="save('clientes', event)">
+                <input type="hidden" name="id">
                 <div class="form-group">
                     <input name="nombre" placeholder="Nombre" required>
                 </div>
@@ -66,7 +70,9 @@
                     <input name="telefono" placeholder="Teléfono">
                 </div>
                 <button type="submit" class="btn-submit">Agregar Cliente</button>
+                <button type="button" class="btn-cancel" onclick="cancelEdit('clientes')" hidden>Cancelar edición</button>
             </form>
+            <p id="mensaje-clientes" class="message" role="status"></p>
             <table>
                 <thead>
                     <tr>

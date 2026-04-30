@@ -1,48 +1,199 @@
+const API_BASE = "./backend/index.php";
 
-const panelPrincipal = document.getElementById("contenido-main");
-const titulo = document.getElementById("tituloPanel");
-const btnCliente = document.getElementById("btn-cliente");
-const btnUsuario = document.getElementById("btn-usuario");
-
-
-const data = { productos: [], clientes: [] };
-
-const cols = {
-    productos: ['nombre', 'categoria', 'precio', 'stock'],
-    clientes: ['nombre', 'apellido', 'email', 'telefono']
+const data = {
+    productos: [],
+    clientes: []
 };
 
+const resources = {
+    productos: {
+        fields: ["nombre", "categoria", "precio", "stock"],
+        form: document.getElementById("form-productos"),
+        table: document.getElementById("tabla-productos"),
+        message: document.getElementById("mensaje-productos"),
+        createText: "Agregar Producto",
+        updateText: "Actualizar Producto"
+    },
+    clientes: {
+        fields: ["nombre", "apellido", "email", "telefono"],
+        form: document.getElementById("form-clientes"),
+        table: document.getElementById("tabla-clientes"),
+        message: document.getElementById("mensaje-clientes"),
+        createText: "Agregar Cliente",
+        updateText: "Actualizar Cliente"
+    }
+};
 
-function mostrar(){
-    
+document.addEventListener("DOMContentLoaded", () => {
+    loadAll();
+});
+
+async function loadAll() {
+    await Promise.all([
+        load("productos"),
+        load("clientes")
+    ]);
 }
 
 function show(id, el) {
-    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-    el.classList.add('active');
+    document.querySelectorAll(".panel").forEach(panel => panel.classList.remove("active"));
+    document.querySelectorAll(".tab").forEach(tab => tab.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+    el.classList.add("active");
 }
 
-function add(type, e) {
-    e.preventDefault();
-    const form = e.target;
-    const row = {};
-    cols[type].forEach(c => row[c] = form[c]?.value || '');
-    data[type].push(row);
-    render(type);
-    form.reset();
+async function load(type) {
+    try {
+        setMessage(type, "Cargando datos...");
+        data[type] = await request(type);
+        render(type);
+        setMessage(type, "");
+    } catch (error) {
+        setMessage(type, error.message, true);
+    }
 }
 
-function remove(type, i) {
-    data[type].splice(i, 1);
-    render(type);
+async function save(type, event) {
+    event.preventDefault();
+
+    const config = resources[type];
+    const formData = new FormData(config.form);
+    const id = formData.get("id");
+    const payload = getPayload(type, formData);
+    const method = id ? "PUT" : "POST";
+    const endpoint = id ? `${type}/${id}` : type;
+
+    try {
+        await request(endpoint, {
+            method,
+            body: JSON.stringify(payload)
+        });
+        cancelEdit(type);
+        await load(type);
+        setMessage(type, id ? "Registro actualizado." : "Registro agregado.");
+    } catch (error) {
+        setMessage(type, error.message, true);
+    }
+}
+
+function edit(type, id) {
+    const config = resources[type];
+    const item = data[type].find(row => Number(row.id) === Number(id));
+
+    if (!item) {
+        setMessage(type, "No se encontró el registro seleccionado.", true);
+        return;
+    }
+
+    config.form.elements.id.value = item.id;
+    config.fields.forEach(field => {
+        config.form.elements[field].value = item[field] ?? "";
+    });
+
+    config.form.querySelector(".btn-submit").textContent = config.updateText;
+    config.form.querySelector(".btn-cancel").hidden = false;
+    config.form.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+async function remove(type, id) {
+    const confirmed = window.confirm("¿Deseas eliminar este registro?");
+
+    if (!confirmed) {
+        return;
+    }
+
+    try {
+        await request(`${type}/${id}`, { method: "DELETE" });
+        await load(type);
+        setMessage(type, "Registro eliminado.");
+    } catch (error) {
+        setMessage(type, error.message, true);
+    }
+}
+
+function cancelEdit(type) {
+    const config = resources[type];
+    config.form.reset();
+    config.form.elements.id.value = "";
+    config.form.querySelector(".btn-submit").textContent = config.createText;
+    config.form.querySelector(".btn-cancel").hidden = true;
 }
 
 function render(type) {
-    document.getElementById('tabla-' + type).innerHTML =
-        data[type].map((r, i) =>
-            `<tr>${cols[type].map(c => `<td>${r[c]}</td>`).join('')}
-           <td><button class="del" onclick="remove('${type}',${i})">✕</button></td></tr>`
-        ).join('');
+    const config = resources[type];
+
+    if (data[type].length === 0) {
+        config.table.innerHTML = `
+            <tr>
+                <td colspan="${config.fields.length + 1}" class="empty">Sin registros</td>
+            </tr>
+        `;
+        return;
+    }
+
+    config.table.innerHTML = data[type].map(row => `
+        <tr>
+            ${config.fields.map(field => `<td>${escapeHtml(formatValue(row[field], field))}</td>`).join("")}
+            <td class="actions">
+                <button class="edit" type="button" onclick="edit('${type}', ${row.id})">Editar</button>
+                <button class="del" type="button" onclick="remove('${type}', ${row.id})">Eliminar</button>
+            </td>
+        </tr>
+    `).join("");
+}
+
+function getPayload(type, formData) {
+    const payload = {};
+
+    resources[type].fields.forEach(field => {
+        payload[field] = formData.get(field)?.trim() ?? "";
+    });
+
+    if (type === "productos") {
+        payload.precio = Number(payload.precio);
+        payload.stock = Number.parseInt(payload.stock, 10);
+    }
+
+    return payload;
+}
+
+async function request(endpoint, options = {}) {
+    const response = await fetch(`${API_BASE}/${endpoint}`, {
+        headers: {
+            "Content-Type": "application/json"
+        },
+        ...options
+    });
+
+    const text = await response.text();
+    const result = text ? JSON.parse(text) : null;
+
+    if (!response.ok) {
+        throw new Error(result?.error ?? "No se pudo completar la petición.");
+    }
+
+    return result;
+}
+
+function formatValue(value, field) {
+    if (field === "precio" && value !== "" && value !== null && value !== undefined) {
+        return Number(value).toFixed(2);
+    }
+
+    return value ?? "";
+}
+
+function setMessage(type, message, isError = false) {
+    const messageElement = resources[type].message;
+    messageElement.textContent = message;
+    messageElement.classList.toggle("error", isError);
+}
+
+function escapeHtml(value) {
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
 }
