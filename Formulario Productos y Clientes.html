@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Productos y Clientes</title>
+  <style>
+    body { font-family: sans-serif; max-width: 800px; margin: 20px auto; padding: 0 16px; }
+    h1 { text-align: center; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+    .tab { padding: 8px 20px; cursor: pointer; border: 1px solid #aaa; border-radius: 4px; background: #eee; }
+    .tab.active { background: #3498db; color: #fff; border-color: #3498db; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+    input, select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%; }
+    button[type=submit] { grid-column: 1/-1; padding: 10px; background: #3498db; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 8px; border: 1px solid #ddd; text-align: left; }
+    th { background: #f4f4f4; }
+    .del { background: #e74c3c; color: #fff; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>Productos y Clientes</h1>
+
+  <div class="tabs">
+    <div class="tab active" onclick="show('productos', this)">Productos</div>
+    <div class="tab" onclick="show('clientes', this)">Clientes</div>
+  </div>
+
+  <!-- Productos -->
+  <div id="productos" class="panel active">
+    <form onsubmit="add('productos', event)">
+      <input name="nombre"    placeholder="Nombre"    required/>
+      <input name="categoria" placeholder="Categoría" required/>
+      <input name="precio"    placeholder="Precio"    type="number" min="0" step="0.01" required/>
+      <input name="stock"     placeholder="Stock"     type="number" min="0" required/>
+      <button type="submit">Agregar Producto</button>
+    </form>
+    <table>
+      <thead><tr><th>Nombre</th><th>Categoría</th><th>Precio</th><th>Stock</th><th></th></tr></thead>
+      <tbody id="tabla-productos"></tbody>
+    </table>
+  </div>
+
+  <!-- Clientes -->
+  <div id="clientes" class="panel">
+    <form onsubmit="add('clientes', event)">
+      <input name="nombre"   placeholder="Nombre"   required/>
+      <input name="apellido" placeholder="Apellido" required/>
+      <input name="email"    placeholder="Email"    type="email" required/>
+      <input name="telefono" placeholder="Teléfono"/>
+      <button type="submit">Agregar Cliente</button>
+    </form>
+    <table>
+      <thead><tr><th>Nombre</th><th>Apellido</th><th>Email</th><th>Teléfono</th><th></th></tr></thead>
+      <tbody id="tabla-clientes"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const data = { productos: [], clientes: [] };
+
+    const cols = {
+      productos: ['nombre','categoria','precio','stock'],
+      clientes:  ['nombre','apellido','email','telefono']
+    };
+
+    function show(id, el) {
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      el.classList.add('active');
+    }
+
+    function add(type, e) {
+      e.preventDefault();
+      const form = e.target;
+      const row = {};
+      cols[type].forEach(c => row[c] = form[c]?.value || '');
+      data[type].push(row);
+      render(type);
+      form.reset();
+    }
+
+    function remove(type, i) {
+      data[type].splice(i, 1);
+      render(type);
+    }
+
+    function render(type) {
+      document.getElementById('tabla-' + type).innerHTML =
+        data[type].map((r, i) =>
+          `<tr>${cols[type].map(c => `<td>${r[c]}</td>`).join('')}
+           <td><button class="del" onclick="remove('${type}',${i})">✕</button></td></tr>`
+        ).join('');
+    }
+  </script>
+</body>
+</html>
