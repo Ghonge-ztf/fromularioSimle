@@ -24,16 +24,16 @@
             <form id="form-productos" onsubmit="save('productos', event)">
                 <input type="hidden" name="id">
                 <div class="form-group">
-                    <input name="nombre" placeholder="Nombre" required>
+                    <input name="produc_nombre" placeholder="Nombre" required>
                 </div>
                 <div class="form-group">
-                    <input name="categoria" placeholder="Categoría" required>
+                    <input name="produc_catego" placeholder="Categoría" required>
                 </div>
                 <div class="form-group">
-                    <input name="precio" placeholder="Precio" type="number" min="0" step="0.01" required>
+                    <input name="produc_precio" placeholder="Precio" type="number" min="0" step="0.01" required>
                 </div>
                 <div class="form-group">
-                    <input name="stock" placeholder="Stock" type="number" min="0" required>
+                    <input name="produc_cantid" placeholder="Stock" type="number" min="0" required>
                 </div>
                 <button type="submit" class="btn-submit">Agregar Producto</button>
                 <button type="button" class="btn-cancel" onclick="cancelEdit('productos')" hidden>Cancelar edición</button>
@@ -58,16 +58,16 @@
             <form id="form-clientes" onsubmit="save('clientes', event)">
                 <input type="hidden" name="id">
                 <div class="form-group">
-                    <input name="nombre" placeholder="Nombre" required>
+                    <input name="client_nombre" placeholder="Nombre" required>
                 </div>
                 <div class="form-group">
-                    <input name="apellido" placeholder="Apellido" required>
+                    <input name="client_apelli" placeholder="Apellido" required>
                 </div>
                 <div class="form-group">
-                    <input name="email" placeholder="Email" type="email" required>
+                    <input name="client_email" placeholder="Email" type="email" required>
                 </div>
                 <div class="form-group">
-                    <input name="telefono" placeholder="Teléfono">
+                    <input name="client_telefo" placeholder="Teléfono">
                 </div>
                 <button type="submit" class="btn-submit">Agregar Cliente</button>
                 <button type="button" class="btn-cancel" onclick="cancelEdit('clientes')" hidden>Cancelar edición</button>

@@ -7,7 +7,7 @@ const data = {
 
 const resources = {
     productos: {
-        fields: ["nombre", "categoria", "precio", "stock"],
+        fields: ["produc_nombre", "produc_catego", "produc_precio", "produc_cantid"],
         form: document.getElementById("form-productos"),
         table: document.getElementById("tabla-productos"),
         message: document.getElementById("mensaje-productos"),
@@ -15,7 +15,7 @@ const resources = {
         updateText: "Actualizar Producto"
     },
     clientes: {
-        fields: ["nombre", "apellido", "email", "telefono"],
+        fields: ["client_nombre", "client_apelli", "client_email", "client_telefo"],
         form: document.getElementById("form-clientes"),
         table: document.getElementById("tabla-clientes"),
         message: document.getElementById("mensaje-clientes"),
@@ -63,6 +63,8 @@ async function save(type, event) {
     const method = id ? "PUT" : "POST";
     const endpoint = id ? `${type}/${id}` : type;
 
+    console.log(payload);
+
     try {
         await request(endpoint, {
             method,
@@ -78,14 +80,14 @@ async function save(type, event) {
 
 function edit(type, id) {
     const config = resources[type];
-    const item = data[type].find(row => Number(row.id) === Number(id));
+    const item = data[type].find(row => Number(row.produc_id || row.client_id) === Number(id));
 
     if (!item) {
         setMessage(type, "No se encontró el registro seleccionado.", true);
         return;
     }
 
-    config.form.elements.id.value = item.id;
+    config.form.elements.id.value = item.produc_id || item.client_id;
     config.fields.forEach(field => {
         config.form.elements[field].value = item[field] ?? "";
     });
@@ -135,8 +137,8 @@ function render(type) {
         <tr>
             ${config.fields.map(field => `<td>${escapeHtml(formatValue(row[field], field))}</td>`).join("")}
             <td class="actions">
-                <button class="edit" type="button" onclick="edit('${type}', ${row.id})">Editar</button>
-                <button class="del" type="button" onclick="remove('${type}', ${row.id})">Eliminar</button>
+                <button class="edit" type="button" onclick="edit('${type}', ${row.produc_id || row.client_id})">Editar</button>
+                <button class="del" type="button" onclick="remove('${type}', ${row.produc_id || row.client_id})">Eliminar</button>
             </td>
         </tr>
     `).join("");
@@ -150,20 +152,24 @@ function getPayload(type, formData) {
     });
 
     if (type === "productos") {
-        payload.precio = Number(payload.precio);
-        payload.stock = Number.parseInt(payload.stock, 10);
+        payload.produc_precio = Number(payload.produc_precio);
+        payload.produc_cantid = Number.parseInt(payload.produc_cantid, 10);
     }
+    console.log(payload);
 
     return payload;
 }
 
 async function request(endpoint, options = {}) {
+
+    
     const response = await fetch(`${API_BASE}/${endpoint}`, {
         headers: {
             "Content-Type": "application/json"
         },
         ...options
-    });
+    })
+    .catch( error => console.log(error));
 
     const text = await response.text();
     const result = text ? JSON.parse(text) : null;
@@ -176,7 +182,7 @@ async function request(endpoint, options = {}) {
 }
 
 function formatValue(value, field) {
-    if (field === "precio" && value !== "" && value !== null && value !== undefined) {
+    if (field === "produc_precio" && value !== "" && value !== null && value !== undefined) {
         return Number(value).toFixed(2);
     }
 
